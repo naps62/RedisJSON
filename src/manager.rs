@@ -569,6 +569,7 @@ impl<'a> Manager for RedisJsonKeyManager<'a> {
     }
 
     fn from_str(&self, val: &str, format: Format) -> Result<Value, Error> {
+        println!("val: {:?}", val);
         match format {
             Format::JSON => Ok(serde_json::from_str(val)?),
             Format::BSON => decode_document(&mut Cursor::new(val.as_bytes()))

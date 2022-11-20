@@ -599,8 +599,29 @@ impl<'a> Manager for RedisIValueJsonKeyManager<'a> {
     }
 
     fn from_str(&self, val: &str, format: Format) -> Result<Self::O, Error> {
+        println!("val: {:?}", val);
+        println!("str: {:?}", serde_json::from_str::<Self::O>(val));
         match format {
-            Format::JSON => Ok(serde_json::from_str(val)?),
+            Format::JSON => {
+                // parsing into a Value works
+                let val2: serde_json::Value = serde_json::from_str(val)?;
+                println!("serde_json::Value: {:?}", val2);
+                println!("serde_json::Value: {:?}", val2.to_string());
+                let val3: ijson::IValue = serde_json::from_value(val2.clone())?;
+
+                // same thing but with IValue, this fails
+                println!("isjon::IValue: {:?}", val3);
+                println!("isjon::IValue: {:?}", val3.as_string());
+                Ok(serde_json::from_value(val2)?)
+
+                // total output:
+                // val: "{\"a\": 45232446983204764922041}"
+                // str: Ok({"a": {"$serde_json::private::Number": "45232446983204764922041"}})
+                // serde_json::Value: Object {"a": Number(45232446983204764922041)}
+                // serde_json::Value: "{\"a\":45232446983204764922041}"
+                // isjon::IValue: {"a": {"$serde_json::private::Number": "45232446983204764922041"}}
+                // isjon::IValue: None
+            }
             Format::BSON => decode_document(&mut Cursor::new(val.as_bytes())).map_or_else(
                 |e| Err(e.to_string().into()),
                 |docs| {
